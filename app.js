@@ -334,21 +334,25 @@ async function handleAction(event) {
 // These functions now return an object with the fields that changed.
 
 function sellItem(item) {
-    if (item.exhibidor > 0) {
+    const exhibidor = parseInt(item.exhibidor, 10) || 0;
+    const bodega = parseInt(item.bodega, 10) || 0;
+    const vendidos = parseInt(item.vendidos, 10) || 0;
+
+    if (exhibidor > 0) {
         showToast(`1 unidad de ${item.descripcion} vendida desde exhibidor.`, 'success');
-        const newExhibidor = item.exhibidor - 1;
+        const newExhibidor = exhibidor - 1;
         return {
             exhibidor: newExhibidor,
-            vendidos: item.vendidos + 1,
-            valor_total: (newExhibidor + item.bodega) * item.precio_unitario
+            vendidos: vendidos + 1,
+            valor_total: (newExhibidor + bodega) * item.precio_unitario
         };
-    } else if (item.bodega > 0) {
+    } else if (bodega > 0) {
         showToast(`1 unidad de ${item.descripcion} vendida desde bodega.`, 'success');
-        const newBodega = item.bodega - 1;
+        const newBodega = bodega - 1;
         return {
             bodega: newBodega,
-            vendidos: item.vendidos + 1,
-            valor_total: (item.exhibidor + newBodega) * item.precio_unitario
+            vendidos: vendidos + 1,
+            valor_total: (exhibidor + newBodega) * item.precio_unitario
         };
     } else {
         showToast(`No hay unidades de ${item.descripcion} para vender.`, 'error');
@@ -357,12 +361,15 @@ function sellItem(item) {
 }
 
 function moveUnits(item, from, to, quantity) {
-    if (item[from] >= quantity) {
+    const fromValue = parseInt(item[from], 10) || 0;
+    const toValue = parseInt(item[to], 10) || 0;
+
+    if (fromValue >= quantity) {
         showToast(`${quantity} unidad(es) de ${item.descripcion} movida(s) de ${from} a ${to}.`, 'success');
-        const newFromValue = item[from] - quantity;
-        const newToValue = item[to] + quantity;
-        const newExhibidor = to === 'exhibidor' ? newToValue : (from === 'exhibidor' ? newFromValue : item.exhibidor);
-        const newBodega = to === 'bodega' ? newToValue : (from === 'bodega' ? newFromValue : item.bodega);
+        const newFromValue = fromValue - quantity;
+        const newToValue = toValue + quantity;
+        const newExhibidor = to === 'exhibidor' ? newToValue : (from === 'exhibidor' ? newFromValue : parseInt(item.exhibidor, 10) || 0);
+        const newBodega = to === 'bodega' ? newToValue : (from === 'bodega' ? newFromValue : parseInt(item.bodega, 10) || 0);
         return {
             [from]: newFromValue,
             [to]: newToValue,
@@ -376,9 +383,9 @@ function moveUnits(item, from, to, quantity) {
 
 function addUnit(item, location, quantity) {
     showToast(`${quantity} unidad(es) añadida(s) a ${location} para ${item.descripcion}.`, 'success');
-    const newLocationValue = item[location] + quantity;
-    const newExhibidor = location === 'exhibidor' ? newLocationValue : item.exhibidor;
-    const newBodega = location === 'bodega' ? newLocationValue : item.bodega;
+    const newLocationValue = (parseInt(item[location], 10) || 0) + quantity;
+    const newExhibidor = location === 'exhibidor' ? newLocationValue : (parseInt(item.exhibidor, 10) || 0);
+    const newBodega = location === 'bodega' ? newLocationValue : (parseInt(item.bodega, 10) || 0);
     return {
         [location]: newLocationValue,
         valor_total: (newExhibidor + newBodega) * item.precio_unitario
@@ -386,11 +393,12 @@ function addUnit(item, location, quantity) {
 }
 
 function removeUnit(item, location, quantity) {
-    if (item[location] >= quantity) {
+    const locationValue = parseInt(item[location], 10) || 0;
+    if (locationValue >= quantity) {
         showToast(`${quantity} unidad(es) quitada(s) de ${location} para ${item.descripcion}.`, 'success');
-        const newLocationValue = item[location] - quantity;
-        const newExhibidor = location === 'exhibidor' ? newLocationValue : item.exhibidor;
-        const newBodega = location === 'bodega' ? newLocationValue : item.bodega;
+        const newLocationValue = locationValue - quantity;
+        const newExhibidor = location === 'exhibidor' ? newLocationValue : (parseInt(item.exhibidor, 10) || 0);
+        const newBodega = location === 'bodega' ? newLocationValue : (parseInt(item.bodega, 10) || 0);
         return {
             [location]: newLocationValue,
             valor_total: (newExhibidor + newBodega) * item.precio_unitario
@@ -402,13 +410,17 @@ function removeUnit(item, location, quantity) {
 }
 
 function undoSell(item) {
-    if (item.vendidos > 0) {
+    const vendidos = parseInt(item.vendidos, 10) || 0;
+    const bodega = parseInt(item.bodega, 10) || 0;
+    const exhibidor = parseInt(item.exhibidor, 10) || 0;
+
+    if (vendidos > 0) {
         showToast(`1 unidad de ${item.descripcion} devuelta de vendidos a bodega.`, 'success');
-        const newBodega = item.bodega + 1;
+        const newBodega = bodega + 1;
         return {
-            vendidos: item.vendidos - 1,
+            vendidos: vendidos - 1,
             bodega: newBodega,
-            valor_total: (item.exhibidor + newBodega) * item.precio_unitario
+            valor_total: (exhibidor + newBodega) * item.precio_unitario
         };
     } else {
         showToast(`No hay unidades vendidas de ${item.descripcion} para anular.`, 'error');
