@@ -378,7 +378,6 @@ function removeUnit(item, location, quantity) {
  * @param {object} item - The inventory item.
  */
 function undoSell(item) {
-    showToast(`DEBUG: Antes de anular venta de ${item.descripcion}, vendidos era: ${item.vendidos} (tipo: ${typeof item.vendidos})`, 'info');
     if (item.vendidos > 0) {
         item.vendidos--;
         // For simplicity, return to bodega. Could implement a modal for choice.
@@ -387,30 +386,9 @@ function undoSell(item) {
     } else {
         showToast(`No hay unidades vendidas de ${item.descripcion} para anular.`, 'error');
     }
-    showToast(`DEBUG: Después de anular venta de ${item.descripcion}, vendidos es: ${item.vendidos} (tipo: ${typeof item.vendidos})`, 'info');
 }
 
-/**
- * Resets the inventory data to its initial state.
- */
-async function resetData() {
-    if (confirm('¿Está seguro que desea restablecer todos los datos del inventario? Esta acción no se puede deshacer.')) {
-        try {
-            showToast('Restableciendo datos desde data.json...', 'info');
-            const response = await fetch('data.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            inventory = await response.json(); // inventory is now the freshly fetched data
-            saveInventory();
-            updateView();
-            showToast('Datos del inventario restablecidos exitosamente.', 'success');
-        } catch (error) {
-            console.error('Error resetting data from data.json:', error);
-            showToast('Error al restablecer los datos. Verifique la consola para más detalles.', 'error');
-        }
-    }
-}
+
 
 /**
  * Exports the current inventory data to a CSV file.
@@ -616,7 +594,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async to awa
     updateAuthUI(); // Update UI based on initial login status
     updateView(); // Initial render
 
-    document.getElementById('resetDataBtn').addEventListener('click', resetData);
+    
     document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
     document.getElementById('searchInput').addEventListener('input', updateView);
     document.getElementById('sortSelect').addEventListener('change', updateView);
