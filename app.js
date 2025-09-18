@@ -391,12 +391,22 @@ function undoSell(item) {
 /**
  * Resets the inventory data to its initial state.
  */
-function resetData() {
+async function resetData() {
     if (confirm('¿Está seguro que desea restablecer todos los datos del inventario? Esta acción no se puede deshacer.')) {
-        inventory = JSON.parse(JSON.stringify(initialInventoryData)); // Deep copy
-        saveInventory();
-        updateView();
-        showToast('Datos del inventario restablecidos.', 'info');
+        try {
+            showToast('Restableciendo datos desde data.json...', 'info');
+            const response = await fetch('data.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            inventory = await response.json(); // inventory is now the freshly fetched data
+            saveInventory();
+            updateView();
+            showToast('Datos del inventario restablecidos exitosamente.', 'success');
+        } catch (error) {
+            console.error('Error resetting data from data.json:', error);
+            showToast('Error al restablecer los datos. Verifique la consola para más detalles.', 'error');
+        }
     }
 }
 
