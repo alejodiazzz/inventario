@@ -1,7 +1,19 @@
 [
-  {"referencia":"10588","descripcion":"ARBOL PINO SIBERIA 180CM ENGANCHE MIXTO","precio_unitario":320000,"exhibidor":2,"bodega":1,"vendidos":0},
+  {"referencia":"10106","descripcion":"ARBOL 180CM ENGANCHE MIXTO 4185","precio_unitario":408000,"exhibidor":3,"bodega":0,"vendidos":0},
+  {"referencia":"10588","descripcion":"ARBOL PINO SIBERIA 180CM 715","precio_unitario":320000,"exhibidor":2,"bodega":1,"vendidos":0},
   {"referencia":"10589","descripcion":"ARBOL PINO SIBERIA 160CM 480 RMS","precio_unitario":480000,"exhibidor":1,"bodega":2,"vendidos":0},
-  {"referencia":"13320","descripcion":"ARBOL NEVADO 3 RAMAS DE 210CM","precio_unitario":418000,"exhibidor":1,"bodega":2,"vendidos":0},
-  {"referencia":"11090","descripcion":"ARBOL PINO NEVADO 180 CM","precio_unitario":347000,"exhibidor":3,"bodega":0,"vendidos":0},
-  {"referencia":"11905","descripcion":"ARBOL PINO NEVADO 150CM","precio_unitario":237000,"exhibidor":0,"bodega":4,"vendidos":0}
+  {"referencia":"10590","descripcion":"ARBOL PINO SIBERIA 210CM 688 RMS REF 721","precio_unitario":567000,"exhibidor":4,"bodega":0,"vendidos":0},
+  {"referencia":"10592","descripcion":"ARBOL PINO NEVADO 150 CM N178E","precio_unitario":378000,"exhibidor":3,"bodega":0,"vendidos":0},
+  {"referencia":"11090","descripcion":"ARBOL PINO NEVADO 180CM 499 RMS","precio_unitario":347000,"exhibidor":3,"bodega":0,"vendidos":0},
+  {"referencia":"11905","descripcion":"ARBOL PINO NEVADO 150CM 430 RMS","precio_unitario":237000,"exhibidor":0,"bodega":4,"vendidos":0},
+  {"referencia":"11908","descripcion":"ARBOL PINO NEVADO 210CM 700 RMS","precio_unitario":390000,"exhibidor":2,"bodega":0,"vendidos":0},
+  {"referencia":"11909","descripcion":"ARBOL PINO NEVADO 240CM 1020 RMS","precio_unitario":920000,"exhibidor":1,"bodega":0,"vendidos":0},
+  {"referencia":"11914","descripcion":"ARBOL PINO NEVADO 180CM 499 RMS","precio_unitario":390000,"exhibidor":2,"bodega":0,"vendidos":0},
+  {"referencia":"11921","descripcion":"ARBOL PINO NEVADO 210CM 700 RMS","precio_unitario":790000,"exhibidor":1,"bodega":0,"vendidos":0},
+  {"referencia":"11930","descripcion":"ARBOL PINO NEVADO 180CM 490 RMS","precio_unitario":420000,"exhibidor":1,"bodega":0,"vendidos":0},
+  {"referencia":"11931","descripcion":"ARBOL PINO NEVADO 210CM 700 RMS","precio_unitario":495000,"exhibidor":1,"bodega":0,"vendidos":0},
+  {"referencia":"11933","descripcion":"ARBOL PINO NEVADO 240CM 1020 RMS","precio_unitario":520000,"exhibidor":1,"bodega":0,"vendidos":0},
+  {"referencia":"13320","descripcion":"ARBOL FAROLERO 210CM 406 RMS","precio_unitario":528000,"exhibidor":1,"bodega":0,"vendidos":0},
+  {"referencia":"14748","descripcion":"ARBOL NEVADO 240CM 3 UND","precio_unitario":418000,"exhibidor":1,"bodega":2,"vendidos":0},
+  {"referencia":"14755","descripcion":"ARBOL NEVADO 3 RAMAS DE 210CM","precio_unitario":418000,"exhibidor":1,"bodega":2,"vendidos":0}
 ]
