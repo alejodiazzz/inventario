@@ -57,7 +57,7 @@ function logout() {
     localStorage.removeItem('isLoggedIn');
     showToast('Sesión cerrada.', 'info');
     updateAuthUI();
-    renderInventory(); // Re-render to hide edit buttons
+    updateView(); // Re-render to hide edit buttons
 }
 
 /**
@@ -135,11 +135,12 @@ function showToast(message, type = 'info') {
     alert(`${type.toUpperCase()}: ${message}`);
 }
 
-// 4. Rendering Function
+// 4. Rendering and View Update Functions
 /**
- * Renders the inventory table and updates summary indicators.
+ * Renders the inventory table and updates summary indicators based on the provided data.
+ * @param {Array} dataToRender - The array of inventory items to display.
  */
-function renderInventory() {
+function renderInventory(dataToRender) {
     const inventoryTableBody = document.querySelector('#inventoryTable tbody');
     inventoryTableBody.innerHTML = ''; // Clear existing rows
 
@@ -148,7 +149,10 @@ function renderInventory() {
     let totalVendidos = 0;
     let totalVentasCOP = 0;
 
-    inventory.forEach(item => {
+    // If no data is provided, which can happen if the filter returns empty, show nothing.
+    const itemsToRender = dataToRender || [];
+
+    itemsToRender.forEach(item => {
         // Calculate precio_en_ventas dynamically
         item.precio_en_ventas = item.vendidos * item.precio_unitario;
 
@@ -196,6 +200,53 @@ function renderInventory() {
         button.addEventListener('click', handleAction);
     });
 }
+
+/**
+ * Filters, sorts, and then renders the inventory based on UI controls.
+ */
+function updateView() {
+    let filteredInventory = [...inventory]; // Start with a copy of the full inventory
+
+    // 1. Filter by search term
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    if (searchTerm) {
+        filteredInventory = filteredInventory.filter(item => {
+            const referencia = String(item.referencia).toLowerCase();
+            const descripcion = item.descripcion.toLowerCase();
+            return referencia.includes(searchTerm) || descripcion.includes(searchTerm);
+        });
+    }
+
+    // 2. Sort the data
+    const sortValue = document.getElementById('sortSelect').value;
+    if (sortValue !== 'none') {
+        const match = sortValue.match(/(\w+)(Asc|Desc)/);
+        if (match) {
+            const [, field, order] = match;
+            filteredInventory.sort((a, b) => {
+                let valA = a[field];
+                let valB = b[field];
+
+                if (typeof valA === 'string') {
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) {
+                    return order === 'Asc' ? -1 : 1;
+                }
+                if (valA > valB) {
+                    return order === 'Asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+    }
+
+    // 3. Render the final data
+    renderInventory(filteredInventory);
+}
+
 
 // 5. Action Handlers
 /**
@@ -256,7 +307,7 @@ function handleAction(event) {
             showToast('Acción no reconocida.', 'error');
     }
     saveInventory();
-    renderInventory();
+    updateView();
 }
 
 /**
@@ -344,7 +395,7 @@ function resetData() {
     if (confirm('¿Está seguro que desea restablecer todos los datos del inventario? Esta acción no se puede deshacer.')) {
         inventory = JSON.parse(JSON.stringify(initialInventoryData)); // Deep copy
         saveInventory();
-        renderInventory();
+        updateView();
         showToast('Datos del inventario restablecidos.', 'info');
     }
 }
@@ -439,7 +490,7 @@ function handleAddNewItem(event) {
 
     inventory.push(newItem);
     saveInventory();
-    renderInventory();
+    updateView();
     hideAddItemModal();
     showToast('Artículo añadido exitosamente.', 'success');
 }
@@ -459,7 +510,7 @@ function toggleEditMode(row, item) {
     if (row.classList.contains('editing')) { // Currently in edit mode, switch to display
         // This case should ideally not be reached if save/cancel buttons replace edit button
         // But as a fallback, it would revert to display
-        renderInventory(); // Re-render the whole table to ensure consistency
+        updateView(); // Re-render the whole table to ensure consistency
     } else { // Switch to edit mode
         row.classList.add('editing');
         cells.forEach(cell => {
@@ -519,7 +570,7 @@ function saveEditedItem(row, item) {
     // Validate if reference changed (should be readonly, but as a safeguard)
     if (updatedItem.referencia !== item.referencia) {
         showToast('No se puede cambiar la referencia de un artículo existente.', 'error');
-        renderInventory(); // Re-render to discard changes
+        updateView(); // Re-render to discard changes
         return;
     }
 
@@ -532,7 +583,7 @@ function saveEditedItem(row, item) {
     } else {
         showToast('Error al encontrar el artículo para actualizar.', 'error');
     }
-    renderInventory(); // Re-render to show updated data and exit edit mode
+    updateView(); // Re-render to show updated data and exit edit mode
 }
 
 /**
@@ -542,7 +593,7 @@ function saveEditedItem(row, item) {
  */
 function cancelEdit(row, item) {
     showToast('Edición cancelada.', 'info');
-    renderInventory(); // Re-render the whole table to revert changes
+    updateView(); // Re-render the whole table to revert changes
 }
 
 
@@ -551,12 +602,12 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async to awa
     console.log('DOM Content Loaded.');
     await loadInventory(); // Await the loading of inventory
     updateAuthUI(); // Update UI based on initial login status
-    renderInventory(); // Initial render
+    updateView(); // Initial render
 
     document.getElementById('resetDataBtn').addEventListener('click', resetData);
     document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
-    document.getElementById('searchInput').addEventListener('input', () => searchInventory());
-    document.getElementById('sortSelect').addEventListener('change', () => sortInventory());
+    document.getElementById('searchInput').addEventListener('input', updateView);
+    document.getElementById('sortSelect').addEventListener('change', updateView);
 
     // --- Authentication Event Listeners ---
     const loginModal = document.getElementById('loginModal');
@@ -610,7 +661,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async to awa
             if (success) {
                 loginModal.style.display = 'none';
                 updateAuthUI();
-                renderInventory(); // Re-render to show edit buttons
+                updateView(); // Re-render to show edit buttons
             }
             loginForm.reset(); // Clear form fields
         });
