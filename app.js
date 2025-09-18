@@ -1,46 +1,46 @@
 // app.js
 
-// 1. Initial Data
-// 1. Initial Data (now loaded from data.json)
-// const initialInventoryData = [...]; // Removed, now fetched
+// --- Firebase Configuration ---
+const firebaseConfig = {
+    apiKey: "AIzaSyA0F2nv7urXkpZHdhNpqNwME_iJhot1_CQ",
+    authDomain: "inventario-8b3cf.firebaseapp.com",
+    projectId: "inventario-8b3cf",
+    storageBucket: "inventario-8b3cf.firebasestorage.app",
+    messagingSenderId: "312984675671",
+    appId: "1:312984675671:web:06212810c9da335c740a12",
+    measurementId: "G-C0CR5JZ3C2"
+};
 
-let inventory = []; // This will hold the current state of the inventory
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const itemsCollection = db.collection('items');
+
+let inventory = []; // This will hold the current state of the inventory, loaded from Firestore
 
 // --- Client-Side "Authentication" (NOT SECURE) ---
-// For demonstration purposes only. In a real application, authentication requires a backend.
-// Admin Username: admin
-// Admin Password: password123
 const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD_HASH = '1403730359'; // Simple string hash of 'password123'
-
 let isLoggedIn = false;
 
-// Simple (NON-CRYPTOGRAPHIC) hashing function for file:// context compatibility
-// NOT SECURE. For demonstration purposes only.
 function simpleStringHash(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char; // hash * 31 + char
-        hash |= 0; // Convert to 32bit integer
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0;
     }
-    return hash.toString(); // Return as string
+    return hash.toString();
 }
 
-/**
- * Attempts to log in the user.
- * @param {string} username - The entered username.
- * @param {string} password - The entered password.
- * @returns {Promise<boolean>} True if login is successful, false otherwise.
- */
 async function login(username, password) {
     console.log('Attempting login with:', { username, password });
     if (username === ADMIN_USERNAME) {
-        const hashedPassword = simpleStringHash(password); // Use simple hash
+        const hashedPassword = simpleStringHash(password);
         console.log('Generated hash for password:', hashedPassword);
         if (hashedPassword === ADMIN_PASSWORD_HASH) {
             isLoggedIn = true;
-            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('isLoggedIn', 'true'); // Keep login status in localStorage
             showToast('Inicio de sesión exitoso.', 'success');
             return true;
         }
@@ -49,20 +49,14 @@ async function login(username, password) {
     return false;
 }
 
-/**
- * Logs out the current user.
- */
 function logout() {
     isLoggedIn = false;
     localStorage.removeItem('isLoggedIn');
     showToast('Sesión cerrada.', 'info');
     updateAuthUI();
-    updateView(); // Re-render to hide edit buttons
+    updateView();
 }
 
-/**
- * Updates the visibility of authentication-related UI elements.
- */
 function updateAuthUI() {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -79,85 +73,118 @@ function updateAuthUI() {
     }
 }
 
-// 2. localStorage Functions
+// --- Firestore Data Functions ---
+
 /**
- * Loads inventory data from localStorage. If no data is found, it fetches from data.json.
+ * Uploads the initial data from data.json to Firestore.
+ * This is a one-time operation.
+ */
+async function uploadInitialDataToFirestore() {
+    try {
+        showToast('Subiendo datos iniciales a Firebase... Esto puede tardar un momento.', 'info');
+        const response = await fetch('data.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const initialData = await response.json();
+
+        const batch = db.batch();
+
+        initialData.forEach(item => {
+            // Use 'referencia' as the document ID
+            const docRef = itemsCollection.doc(item.referencia);
+            batch.set(docRef, item);
+        });
+
+        await batch.commit();
+        showToast('¡Datos iniciales subidos a Firestore exitosamente!', 'success');
+        await loadInventory(); // Reload inventory from Firestore
+        updateView();
+    } catch (error) {
+        console.error('Error uploading initial data:', error);
+        showToast('Error al subir los datos iniciales. Revisa la consola para más detalles.', 'error');
+    }
+}
+
+
+/**
+ * Loads inventory data from Firestore.
  */
 async function loadInventory() {
-    const storedInventory = localStorage.getItem('inventoryData');
-    if (storedInventory) {
-        inventory = JSON.parse(storedInventory);
-    } else {
-        try {
-            const response = await fetch('data.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            inventory = data;
-            saveInventory();
-            showToast('Datos iniciales cargados desde data.json.', 'info');
-        } catch (error) {
-            console.error('Error loading initial data from data.json:', error);
-            showToast('Error al cargar los datos iniciales. Asegúrese de que la aplicación se ejecuta en un servidor web.', 'error');
-            // Fallback to empty inventory if data.json fails
+    try {
+        showToast('Cargando inventario desde la nube...', 'info');
+        const snapshot = await itemsCollection.get();
+        if (snapshot.empty) {
+            showToast('No se encontraron artículos en la base de datos. ¿Necesitas subir los datos iniciales?', 'warning');
             inventory = [];
+        } else {
+            inventory = snapshot.docs.map(doc => doc.data());
+            showToast('Inventario cargado exitosamente.', 'success');
         }
+    } catch (error) {
+        console.error("Error loading inventory from Firestore: ", error);
+        showToast('Error al cargar el inventario desde la nube. Revisa la consola.', 'error');
+        inventory = []; // Fallback to empty inventory
     }
     // Check login status from localStorage
     isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
 }
 
 /**
- * Saves the current inventory data to localStorage.
+ * Updates a specific item in Firestore.
+ * @param {string} docId - The document ID (referencia) of the item to update.
+ * @param {object} updatedData - An object with the fields to update.
  */
-function saveInventory() {
-    localStorage.setItem('inventoryData', JSON.stringify(inventory));
+async function updateItemInFirestore(docId, updatedData) {
+    try {
+        await itemsCollection.doc(docId).update(updatedData);
+    } catch (error) {
+        console.error("Error updating item: ", error);
+        showToast(`Error al guardar el cambio para ${docId}. El cambio podría no ser permanente.`, 'error');
+    }
 }
 
-// 3. Utility Functions
 /**
- * Formats a number as Colombian Pesos (COP).
- * @param {number} amount - The amount to format.
- * @returns {string} The formatted currency string.
+ * Adds a new item to Firestore.
+ * @param {object} newItem - The new item object to add.
  */
+async function addNewItemToFirestore(newItem) {
+    try {
+        // Use 'referencia' as the document ID
+        await itemsCollection.doc(newItem.referencia).set(newItem);
+    } catch (error) {
+        console.error("Error adding new item: ", error);
+        showToast(`Error al añadir el nuevo artículo. El cambio podría no ser permanente.`, 'error');
+    }
+}
+
+
+// 3. Utility Functions
 function formatCurrency(amount) {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount);
 }
 
-/**
- * Displays a simple toast message (for now, using alert).
- * @param {string} message - The message to display.
- * @param {string} type - Type of message (e.g., 'success', 'error').
- */
 function showToast(message, type = 'info') {
-    // In a real application, this would be a more sophisticated toast notification.
     alert(`${type.toUpperCase()}: ${message}`);
 }
 
 // 4. Rendering and View Update Functions
-/**
- * Renders the inventory table and updates summary indicators based on the provided data.
- * @param {Array} dataToRender - The array of inventory items to display.
- */
 function renderInventory(dataToRender) {
     const inventoryTableBody = document.querySelector('#inventoryTable tbody');
-    inventoryTableBody.innerHTML = ''; // Clear existing rows
+    inventoryTableBody.innerHTML = '';
 
     let totalExhibidor = 0;
     let totalBodega = 0;
     let totalVendidos = 0;
     let totalVentasCOP = 0;
 
-    // If no data is provided, which can happen if the filter returns empty, show nothing.
     const itemsToRender = dataToRender || [];
 
     itemsToRender.forEach(item => {
-        // Calculate precio_en_ventas dynamically
         item.precio_en_ventas = item.vendidos * item.precio_unitario;
 
         const row = inventoryTableBody.insertRow();
-        row.dataset.reference = item.referencia; // Add data-reference to row for easier access
+        row.dataset.reference = item.referencia;
 
         let actionsHtml = `
             <button class="btn-sell" data-reference="${item.referencia}" data-action="sell">Vender</button>
@@ -189,25 +216,19 @@ function renderInventory(dataToRender) {
         totalVentasCOP += item.precio_en_ventas;
     });
 
-    // Update summary indicators
     document.getElementById('totalExhibidor').textContent = totalExhibidor;
     document.getElementById('totalBodega').textContent = totalBodega;
     document.getElementById('totalVendidos').textContent = totalVendidos;
     document.getElementById('totalVentasCOP').textContent = formatCurrency(totalVentasCOP);
 
-    // Attach event listeners to new buttons (delegation is better for performance)
     inventoryTableBody.querySelectorAll('button').forEach(button => {
         button.addEventListener('click', handleAction);
     });
 }
 
-/**
- * Filters, sorts, and then renders the inventory based on UI controls.
- */
 function updateView() {
-    let filteredInventory = [...inventory]; // Start with a copy of the full inventory
+    let filteredInventory = [...inventory];
 
-    // 1. Filter by search term
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     if (searchTerm) {
         filteredInventory = filteredInventory.filter(item => {
@@ -217,7 +238,6 @@ function updateView() {
         });
     }
 
-    // 2. Sort the data
     const sortValue = document.getElementById('sortSelect').value;
     if (sortValue !== 'none') {
         const match = sortValue.match(/(\w+)(Asc|Desc)/);
@@ -226,193 +246,152 @@ function updateView() {
             filteredInventory.sort((a, b) => {
                 let valA = a[field];
                 let valB = b[field];
-
                 if (typeof valA === 'string') {
                     valA = valA.toLowerCase();
                     valB = valB.toLowerCase();
                 }
-
-                if (valA < valB) {
-                    return order === 'Asc' ? -1 : 1;
-                }
-                if (valA > valB) {
-                    return order === 'Asc' ? 1 : -1;
-                }
+                if (valA < valB) return order === 'Asc' ? -1 : 1;
+                if (valA > valB) return order === 'Asc' ? 1 : -1;
                 return 0;
             });
         }
     }
-
-    // 3. Render the final data
     renderInventory(filteredInventory);
 }
 
-
 // 5. Action Handlers
-/**
- * Handles various actions triggered by buttons in the inventory table.
- * @param {Event} event - The click event.
- */
-function handleAction(event) {
+async function handleAction(event) {
     const button = event.target;
     const reference = button.dataset.reference;
     const action = button.dataset.action;
     const itemIndex = inventory.findIndex(item => item.referencia === reference);
 
-    if (itemIndex === -1 && action !== 'addNewItem') { // 'addNewItem' doesn't have a reference yet
+    if (itemIndex === -1) {
         showToast('Artículo no encontrado.', 'error');
         return;
     }
 
-    const item = inventory[itemIndex]; // item will be undefined for 'addNewItem' initially
+    const item = inventory[itemIndex];
 
+    // Actions that don't need immediate save
+    if (action === 'edit') {
+        if (isLoggedIn) {
+            const row = button.closest('tr');
+            toggleEditMode(row, item);
+        } else {
+            showToast('Debe iniciar sesión para editar artículos.', 'warning');
+        }
+        return; // No save/render, handled by edit functions
+    }
+    if (action === 'cancelEdit') {
+        cancelEdit(button.closest('tr'), item);
+        return; // No save/render
+    }
+
+    // Actions that modify data
+    let updatedData = null;
     switch (action) {
         case 'sell':
-            sellItem(item);
+            updatedData = sellItem(item);
             break;
         case 'moveToExhibidor':
-            moveUnits(item, 'bodega', 'exhibidor', 1);
+            updatedData = moveUnits(item, 'bodega', 'exhibidor', 1);
             break;
         case 'moveToBodega':
-            moveUnits(item, 'exhibidor', 'bodega', 1);
+            updatedData = moveUnits(item, 'exhibidor', 'bodega', 1);
             break;
         case 'addUnit':
-            // For simplicity, adding to bodega. Could implement a modal for choice.
-            addUnit(item, 'bodega', 1);
+            updatedData = addUnit(item, 'bodega', 1);
             break;
         case 'removeUnit':
-            // For simplicity, removing from bodega. Could implement a modal for choice.
-            removeUnit(item, 'bodega', 1);
+            updatedData = removeUnit(item, 'bodega', 1);
             break;
         case 'undoSell':
-            undoSell(item);
+            updatedData = undoSell(item);
             break;
-        case 'edit':
-            if (isLoggedIn) {
-                const row = button.closest('tr');
-                toggleEditMode(row, item);
-            } else {
-                showToast('Debe iniciar sesión para editar artículos.', 'warning');
-            }
-            return; // Do not save/render immediately, wait for save/cancel edit
         case 'saveEdit':
-            const rowToSave = button.closest('tr');
-            saveEditedItem(rowToSave, item);
-            break;
-        case 'cancelEdit':
-            const rowToCancel = button.closest('tr');
-            cancelEdit(rowToCancel, item);
-            break;
+            // saveEditedItem handles its own update and UI refresh
+            await saveEditedItem(button.closest('tr'), item);
+            return; // Exit here
         default:
             showToast('Acción no reconocida.', 'error');
+            return;
     }
-    saveInventory();
+
+    if (updatedData) {
+        // Update local inventory array
+        Object.assign(item, updatedData);
+        // Persist change to Firestore
+        await updateItemInFirestore(item.referencia, updatedData);
+    }
+
     updateView();
 }
 
-/**
- * Sells one unit of an item.
- * Prioritizes exhibidor, then bodega.
- * @param {object} item - The inventory item.
- */
+// --- Action Implementations ---
+// These functions now return an object with the fields that changed.
+
 function sellItem(item) {
     if (item.exhibidor > 0) {
-        item.exhibidor--;
-        item.vendidos++;
         showToast(`1 unidad de ${item.descripcion} vendida desde exhibidor.`, 'success');
+        return { exhibidor: item.exhibidor - 1, vendidos: item.vendidos + 1 };
     } else if (item.bodega > 0) {
-        item.bodega--;
-        item.vendidos++;
         showToast(`1 unidad de ${item.descripcion} vendida desde bodega.`, 'success');
+        return { bodega: item.bodega - 1, vendidos: item.vendidos + 1 };
     } else {
         showToast(`No hay unidades de ${item.descripcion} para vender.`, 'error');
+        return null;
     }
 }
 
-/**
- * Moves units between exhibidor and bodega.
- * @param {object} item - The inventory item.
- * @param {string} fromLocation - 'exhibidor' or 'bodega'.
- * @param {string} toLocation - 'exhibidor' or 'bodega'.
- * @param {number} quantity - The number of units to move.
- */
-function moveUnits(item, fromLocation, toLocation, quantity) {
-    if (item[fromLocation] >= quantity) {
-        item[fromLocation] -= quantity;
-        item[toLocation] += quantity;
-        showToast(`${quantity} unidad(es) de ${item.descripcion} movida(s) de ${fromLocation} a ${toLocation}.`, 'success');
+function moveUnits(item, from, to, quantity) {
+    if (item[from] >= quantity) {
+        showToast(`${quantity} unidad(es) de ${item.descripcion} movida(s) de ${from} a ${to}.`, 'success');
+        return {
+            [from]: item[from] - quantity,
+            [to]: item[to] + quantity
+        };
     } else {
-        showToast(`No hay suficientes unidades en ${fromLocation} para mover.`, 'error');
+        showToast(`No hay suficientes unidades en ${from} para mover.`, 'error');
+        return null;
     }
 }
 
-/**
- * Adds units to a specified location (exhibidor or bodega).
- * @param {object} item - The inventory item.
- * @param {string} location - 'exhibidor' or 'bodega'.
- * @param {number} quantity - The number of units to add.
- */
 function addUnit(item, location, quantity) {
-    item[location] += quantity;
     showToast(`${quantity} unidad(es) añadida(s) a ${location} para ${item.descripcion}.`, 'success');
+    return { [location]: item[location] + quantity };
 }
 
-/**
- * Removes units from a specified location (exhibidor or bodega).
- * @param {object} item - The inventory item.
- * @param {string} location - 'exhibidor' or 'bodega'.
- * @param {number} quantity - The number of units to remove.
- */
 function removeUnit(item, location, quantity) {
     if (item[location] >= quantity) {
-        item[location] -= quantity;
         showToast(`${quantity} unidad(es) quitada(s) de ${location} para ${item.descripcion}.`, 'success');
+        return { [location]: item[location] - quantity };
     } else {
         showToast(`No hay suficientes unidades en ${location} para quitar.`, 'error');
+        return null;
     }
 }
 
-/**
- * Undoes a sale, moving one unit from vendidos back to bodega or exhibidor.
- * Prioritizes bodega if available, otherwise exhibidor.
- * @param {object} item - The inventory item.
- */
 function undoSell(item) {
     if (item.vendidos > 0) {
-        item.vendidos--;
-        // For simplicity, return to bodega. Could implement a modal for choice.
-        item.bodega++;
         showToast(`1 unidad de ${item.descripcion} devuelta de vendidos a bodega.`, 'success');
+        return { vendidos: item.vendidos - 1, bodega: item.bodega + 1 };
     } else {
         showToast(`No hay unidades vendidas de ${item.descripcion} para anular.`, 'error');
+        return null;
     }
 }
 
-
-
-/**
- * Exports the current inventory data to a CSV file.
- */
 function exportCSV() {
     const headers = ["referencia", "descripcion", "precio_unitario", "exhibidor", "bodega", "vendidos", "precio_en_ventas"];
-    const csvRows = [];
-
-    // Add headers
-    csvRows.push(headers.join(','));
-
-    // Add data rows
+    const csvRows = [headers.join(',')];
     inventory.forEach(item => {
         const values = headers.map(header => {
             const value = item[header];
-            // Handle commas in description by enclosing in quotes
-            if (typeof value === 'string' && value.includes(',')) {
-                return `"${value}"`;
-            }
-            return value;
+            return (typeof value === 'string' && value.includes(',')) ? `"${value}"` : value;
         });
         csvRows.push(values.join(','));
     });
-
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -424,271 +403,164 @@ function exportCSV() {
     showToast('Inventario exportado a CSV.', 'success');
 }
 
-// --- Add New Item Functionality ---
-// Moved inside DOMContentLoaded to ensure elements exist
+// --- Add/Edit Item Functionality ---
 
-/**
- * Shows the modal for adding a new item.
- */
 function showAddItemModal() {
     if (!isLoggedIn) {
         showToast('Debe iniciar sesión para añadir nuevos artículos.', 'warning');
         return;
     }
-    const addNewItemModalElement = document.getElementById('addNewItemModal');
-    const addNewItemForm = document.getElementById('addNewItemForm');
-    // Reset form fields
-    addNewItemForm.reset();
-    addNewItemModalElement.style.display = 'block';
+    document.getElementById('addNewItemForm').reset();
+    document.getElementById('addNewItemModal').style.display = 'block';
 }
 
-/**
- * Hides the modal for adding a new item.
- */
 function hideAddItemModal() {
-    const addNewItemModalElement = document.getElementById('addNewItemModal');
-    addNewItemModalElement.style.display = 'none';
+    document.getElementById('addNewItemModal').style.display = 'none';
 }
 
-/**
- * Handles the submission of the add new item form.
- * @param {Event} event - The form submission event.
- */
-function handleAddNewItem(event) {
+async function handleAddNewItem(event) {
     event.preventDefault();
-
-    const addNewItemForm = document.getElementById('addNewItemForm');
-
+    const form = document.getElementById('addNewItemForm');
     const newItem = {
-        referencia: addNewItemForm.referencia.value,
-        descripcion: addNewItemForm.descripcion.value,
-        precio_unitario: parseFloat(addNewItemForm.precio_unitario.value),
-        exhibidor: parseInt(addNewItemForm.exhibidor.value),
-        bodega: parseInt(addNewItemForm.bodega.value),
-        vendidos: 0 // New items start with 0 sold
+        referencia: form.referencia.value,
+        descripcion: form.descripcion.value,
+        precio_unitario: parseFloat(form.precio_unitario.value),
+        exhibidor: parseInt(form.exhibidor.value),
+        bodega: parseInt(form.bodega.value),
+        vendidos: 0
     };
 
-    // Basic validation
     if (inventory.some(item => item.referencia === newItem.referencia)) {
         showToast('Ya existe un artículo con esta referencia.', 'error');
         return;
     }
     if (isNaN(newItem.precio_unitario) || isNaN(newItem.exhibidor) || isNaN(newItem.bodega) || newItem.precio_unitario <= 0 || newItem.exhibidor < 0 || newItem.bodega < 0) {
-        showToast('Por favor, ingrese valores numéricos válidos y positivos para precio, exhibidor y bodega.', 'error');
+        showToast('Por favor, ingrese valores numéricos válidos y positivos.', 'error');
         return;
     }
 
+    // Add to local array
     inventory.push(newItem);
-    saveInventory();
+    // Add to Firestore
+    await addNewItemToFirestore(newItem);
+
     updateView();
     hideAddItemModal();
     showToast('Artículo añadido exitosamente.', 'success');
 }
 
-
-// --- Edit Item Functionality ---
-/**
- * Toggles a table row between display mode and edit mode.
- * @param {HTMLTableRowElement} row - The table row to toggle.
- * @param {object} item - The inventory item associated with the row.
- */
 function toggleEditMode(row, item) {
-    const fields = ['referencia', 'descripcion', 'precio_unitario', 'exhibidor', 'bodega'];
-    const cells = row.querySelectorAll('td[data-field]');
+    row.classList.add('editing');
+    row.querySelectorAll('td[data-field]').forEach(cell => {
+        const field = cell.dataset.field;
+        let value = item[field];
+        if (field === 'precio_unitario') value = item.precio_unitario;
+        const inputType = (field === 'precio_unitario' || field === 'exhibidor' || field === 'bodega') ? 'number' : 'text';
+        const readOnlyAttr = (field === 'referencia') ? 'readonly' : '';
+        cell.innerHTML = `<input type="${inputType}" value="${value}" data-field="${field}" ${readOnlyAttr}>`;
+    });
+
     const actionsCell = row.querySelector('td:last-child');
-
-    if (row.classList.contains('editing')) { // Currently in edit mode, switch to display
-        // This case should ideally not be reached if save/cancel buttons replace edit button
-        // But as a fallback, it would revert to display
-        updateView(); // Re-render the whole table to ensure consistency
-    } else { // Switch to edit mode
-        row.classList.add('editing');
-        cells.forEach(cell => {
-            const field = cell.dataset.field;
-            let value = item[field];
-
-            // Special handling for currency to remove formatting for editing
-            if (field === 'precio_unitario') {
-                value = item.precio_unitario; // Use raw number
-            }
-
-            let inputType = 'text';
-            if (field === 'precio_unitario' || field === 'exhibidor' || field === 'bodega') {
-                inputType = 'number';
-            }
-
-            // For 'referencia', make it read-only to prevent changing primary key
-            const readOnlyAttr = (field === 'referencia') ? 'readonly' : '';
-
-            cell.innerHTML = `<input type="${inputType}" value="${value}" data-field="${field}" ${readOnlyAttr}>`;
-        });
-
-        // Replace action buttons with Save and Cancel
-        actionsCell.innerHTML = `
-            <button class="btn-success" data-reference="${item.referencia}" data-action="saveEdit">Guardar</button>
-            <button class="btn-danger" data-reference="${item.referencia}" data-action="cancelEdit">Cancelar</button>
-        `;
-        actionsCell.querySelectorAll('button').forEach(button => {
-            button.addEventListener('click', handleAction);
-        });
-    }
+    actionsCell.innerHTML = `
+        <button class="btn-success" data-reference="${item.referencia}" data-action="saveEdit">Guardar</button>
+        <button class="btn-danger" data-reference="${item.referencia}" data-action="cancelEdit">Cancelar</button>
+    `;
+    actionsCell.querySelectorAll('button').forEach(button => {
+        button.addEventListener('click', handleAction);
+    });
 }
 
-/**
- * Saves the edited item data from the row.
- * @param {HTMLTableRowElement} row - The table row being edited.
- * @param {object} item - The original inventory item.
- */
-function saveEditedItem(row, item) {
+async function saveEditedItem(row, item) {
     const inputs = row.querySelectorAll('td input');
-    let updatedItem = { ...item }; // Create a copy to update
+    let updatedFields = {};
+    let hasError = false;
 
     inputs.forEach(input => {
         const field = input.dataset.field;
         let value = input.value;
-
         if (field === 'precio_unitario' || field === 'exhibidor' || field === 'bodega') {
             value = parseFloat(value);
             if (isNaN(value) || value < 0) {
                 showToast(`Valor inválido para ${field}.`, 'error');
-                return; // Prevent saving if validation fails
+                hasError = true;
             }
         }
-        updatedItem[field] = value;
+        if (item[field] !== value) {
+            updatedFields[field] = value;
+        }
     });
 
-    // Validate if reference changed (should be readonly, but as a safeguard)
-    if (updatedItem.referencia !== item.referencia) {
-        showToast('No se puede cambiar la referencia de un artículo existente.', 'error');
-        updateView(); // Re-render to discard changes
-        return;
-    }
+    if (hasError) return;
 
-    // Update the original item in the inventory array
-    const itemIndex = inventory.findIndex(invItem => invItem.referencia === item.referencia);
-    if (itemIndex !== -1) {
-        inventory[itemIndex] = updatedItem;
-        saveInventory();
-        showToast('Artículo actualizado exitosamente.', 'success');
+    if (Object.keys(updatedFields).length > 0) {
+        // Update local data
+        const itemIndex = inventory.findIndex(invItem => invItem.referencia === item.referencia);
+        if (itemIndex !== -1) {
+            Object.assign(inventory[itemIndex], updatedFields);
+            // Persist to Firestore
+            await updateItemInFirestore(item.referencia, updatedFields);
+            showToast('Artículo actualizado exitosamente.', 'success');
+        } else {
+            showToast('Error al encontrar el artículo para actualizar.', 'error');
+        }
     } else {
-        showToast('Error al encontrar el artículo para actualizar.', 'error');
+        showToast('No se realizaron cambios.', 'info');
     }
-    updateView(); // Re-render to show updated data and exit edit mode
+    updateView();
 }
 
-/**
- * Cancels the edit mode for a row and reverts changes.
- * @param {HTMLTableRowElement} row - The table row being edited.
- * @param {object} item - The original inventory item.
- */
 function cancelEdit(row, item) {
     showToast('Edición cancelada.', 'info');
-    updateView(); // Re-render the whole table to revert changes
+    updateView();
 }
 
-
 // 7. Event Listeners (Global Controls)
-document.addEventListener('DOMContentLoaded', async () => { // Made async to await loadInventory
-    console.log('DOM Content Loaded.');
-    await loadInventory(); // Await the loading of inventory
-    updateAuthUI(); // Update UI based on initial login status
-    updateView(); // Initial render
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadInventory();
+    updateAuthUI();
+    updateView();
 
-    
     document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
     document.getElementById('searchInput').addEventListener('input', updateView);
     document.getElementById('sortSelect').addEventListener('change', updateView);
+    document.getElementById('uploadDataBtn').addEventListener('click', uploadInitialDataToFirestore);
 
-    // --- Authentication Event Listeners ---
+    // --- Modals and Auth ---
     const loginModal = document.getElementById('loginModal');
     const loginBtn = document.getElementById('loginBtn');
-    const closeButton = loginModal ? loginModal.querySelector('.close-button') : null;
+    const closeLoginBtn = loginModal.querySelector('.close-button');
     const loginForm = document.getElementById('loginForm');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    console.log('loginBtn element:', loginBtn);
-    console.log('loginModal element:', loginModal);
-
-    if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            console.log('Login button clicked.');
-            if (loginModal) {
-                loginModal.style.display = 'block';
-                console.log('Login modal display set to block.');
-            } else {
-                console.error('Login modal element not found.');
-            }
-        });
-    } else {
-        console.error('Login button element not found.');
-    }
-
-    if (closeButton) {
-        closeButton.addEventListener('click', () => {
-            console.log('Close button clicked.');
-            if (loginModal) {
-                loginModal.style.display = 'none';
-                console.log('Login modal display set to none.');
-            }
-        });
-    }
+    loginBtn.addEventListener('click', () => loginModal.style.display = 'block');
+    closeLoginBtn.addEventListener('click', () => loginModal.style.display = 'none');
+    logoutBtn.addEventListener('click', logout);
 
     window.addEventListener('click', (event) => {
-        if (event.target === loginModal) {
-            console.log('Clicked outside login modal.');
-            loginModal.style.display = 'none';
-        }
+        if (event.target === loginModal) loginModal.style.display = 'none';
     });
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            console.log('Login form submitted.');
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const success = await login(loginForm.username.value, loginForm.password.value);
+        if (success) {
+            loginModal.style.display = 'none';
+            updateAuthUI();
+            updateView();
+        }
+        loginForm.reset();
+    });
 
-            const success = await login(usernameInput, passwordInput);
-            if (success) {
-                loginModal.style.display = 'none';
-                updateAuthUI();
-                updateView(); // Re-render to show edit buttons
-            }
-            loginForm.reset(); // Clear form fields
-        });
-    }
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
-    }
-
-    // --- Add New Item Event Listener ---
+    const addNewItemModal = document.getElementById('addNewItemModal');
     const addNewItemBtn = document.getElementById('addNewItemBtn');
-    console.log('addNewItemBtn element:', addNewItemBtn);
-    if (addNewItemBtn) {
-        addNewItemBtn.addEventListener('click', showAddItemModal);
-    }
-
-    const addNewItemModalElement = document.getElementById('addNewItemModal');
-    const closeAddNewItemButton = addNewItemModalElement ? addNewItemModalElement.querySelector('.close-button') : null;
+    const closeAddBtn = addNewItemModal.querySelector('.close-button');
     const addNewItemForm = document.getElementById('addNewItemForm');
 
-    console.log('addNewItemModalElement element:', addNewItemModalElement);
-    console.log('closeAddNewItemButton element:', closeAddNewItemButton);
-    console.log('addNewItemForm element:', addNewItemForm);
+    addNewItemBtn.addEventListener('click', showAddItemModal);
+    closeAddBtn.addEventListener('click', hideAddItemModal);
+    addNewItemForm.addEventListener('submit', handleAddNewItem);
 
-    if (closeAddNewItemButton) {
-        closeAddNewItemButton.addEventListener('click', hideAddItemModal);
-    }
-
-    if (addNewItemModalElement) {
-        window.addEventListener('click', (event) => {
-            if (event.target === addNewItemModalElement) {
-                hideAddItemModal();
-            }
-        });
-    }
-
-    if (addNewItemForm) {
-        addNewItemForm.addEventListener('submit', handleAddNewItem);
-    }
+    window.addEventListener('click', (event) => {
+        if (event.target === addNewItemModal) hideAddItemModal();
+    });
 });

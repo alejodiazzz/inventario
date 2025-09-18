@@ -23,6 +23,7 @@
             <button id="loginBtn" class="btn-primary">Iniciar Sesión</button>
             <button id="logoutBtn" class="btn-danger" style="display: none;">Cerrar Sesión</button>
             <button id="addNewItemBtn" class="btn-success" style="display: none;">Añadir Nuevo Artículo</button>
+            <button id="uploadDataBtn" class="btn-warning">Subir Datos a Firebase (Solo 1 vez)</button>
         </div>
 
         <!-- Login Modal -->
@@ -93,6 +94,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
 
     <script src="app.js"></script>
 </body>
