@@ -378,6 +378,7 @@ function removeUnit(item, location, quantity) {
  * @param {object} item - The inventory item.
  */
 function undoSell(item) {
+    showToast(`DEBUG: Antes de anular venta de ${item.descripcion}, vendidos era: ${item.vendidos} (tipo: ${typeof item.vendidos})`, 'info');
     if (item.vendidos > 0) {
         item.vendidos--;
         // For simplicity, return to bodega. Could implement a modal for choice.
@@ -386,6 +387,7 @@ function undoSell(item) {
     } else {
         showToast(`No hay unidades vendidas de ${item.descripcion} para anular.`, 'error');
     }
+    showToast(`DEBUG: Después de anular venta de ${item.descripcion}, vendidos es: ${item.vendidos} (tipo: ${typeof item.vendidos})`, 'info');
 }
 
 /**
