@@ -118,7 +118,17 @@ async function loadInventory() {
             showToast('No se encontraron artículos en la base de datos. ¿Necesitas subir los datos iniciales?', 'warning');
             inventory = [];
         } else {
-            inventory = snapshot.docs.map(doc => doc.data());
+            // Sanitize data on load to prevent type issues
+            inventory = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    ...data,
+                    exhibidor: parseInt(data.exhibidor, 10) || 0,
+                    bodega: parseInt(data.bodega, 10) || 0,
+                    vendidos: parseInt(data.vendidos, 10) || 0,
+                    precio_unitario: parseFloat(data.precio_unitario) || 0
+                };
+            });
             showToast('Inventario cargado exitosamente.', 'success');
         }
     } catch (error) {
