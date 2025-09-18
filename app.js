@@ -212,9 +212,9 @@ function renderInventory(dataToRender) {
             <td>${actionsHtml}</td>
         `;
 
-        totalExhibidor += item.exhibidor;
-        totalBodega += item.bodega;
-        totalVendidos += item.vendidos;
+        totalExhibidor += parseInt(item.exhibidor, 10) || 0;
+        totalBodega += parseInt(item.bodega, 10) || 0;
+        totalVendidos += parseInt(item.vendidos, 10) || 0;
         totalVentasCOP += item.precio_en_ventas;
     });
 
