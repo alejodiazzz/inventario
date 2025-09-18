@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inventario de Árboles Navideños</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Inventario de Árboles Navideños</h1>
+
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Buscar por referencia o descripción...">
+            <select id="sortSelect">
+                <option value="none">Ordenar por...</option>
+                <option value="referenciaAsc">Referencia (Asc)</option>
+                <option value="referenciaDesc">Referencia (Desc)</option>
+                <option value="precioAsc">Precio (Asc)</option>
+                <option value="precioDesc">Precio (Desc)</option>
+            </select>
+            <button id="exportCsvBtn">Exportar CSV</button>
+            <button id="resetDataBtn">Restablecer Datos</button>
+            <button id="loginBtn" class="btn-primary">Iniciar Sesión</button>
+            <button id="logoutBtn" class="btn-danger" style="display: none;">Cerrar Sesión</button>
+            <button id="addNewItemBtn" class="btn-success" style="display: none;">Añadir Nuevo Artículo</button>
+        </div>
+
+        <!-- Login Modal -->
+        <div id="loginModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2>Iniciar Sesión</h2>
+                <form id="loginForm">
+                    <label for="username">Usuario:</label>
+                    <input type="text" id="username" required>
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" required>
+                    <button type="submit">Entrar</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="summary">
+            <p>Total en Exhibidor: <span id="totalExhibidor">0</span></p>
+            <p>Total en Bodega: <span id="totalBodega">0</span></p>
+            <p>Total Vendidos: <span id="totalVendidos">0</span></p>
+            <p>Total Ventas (COP): <span id="totalVentasCOP">0</span></p>
+        </div>
+
+        <div class="table-responsive">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Referencia</th>
+                        <th>Descripción</th>
+                        <th>Precio Unitario</th>
+                        <th>Exhibidor</th>
+                        <th>Bodega</th>
+                        <th>Vendidos</th>
+                        <th>Precio en Ventas</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Inventory items will be rendered here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add New Item Modal -->
+        <div id="addNewItemModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2>Añadir Nuevo Artículo</h2>
+                <form id="addNewItemForm">
+                    <label for="newReferencia">Referencia:</label>
+                    <input type="text" id="newReferencia" name="referencia" required>
+
+                    <label for="newDescripcion">Descripción:</label>
+                    <input type="text" id="newDescripcion" name="descripcion" required>
+
+                    <label for="newPrecioUnitario">Precio Unitario:</label>
+                    <input type="number" id="newPrecioUnitario" name="precio_unitario" min="0" required>
+
+                    <label for="newExhibidor">Cantidad en Exhibidor:</label>
+                    <input type="number" id="newExhibidor" name="exhibidor" min="0" value="0" required>
+
+                    <label for="newBodega">Cantidad en Bodega:</label>
+                    <input type="number" id="newBodega" name="bodega" min="0" value="0" required>
+
+                    <button type="submit">Guardar Artículo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
