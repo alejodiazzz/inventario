@@ -218,7 +218,7 @@ function renderInventory(dataToRender) {
             <td data-field="bodega">${item.bodega}</td>
             <td data-field="vendidos">${item.vendidos}</td>
             <td data-field="precio_en_ventas">${formatCurrency(item.precio_en_ventas)}</td>
-            <td data-field="valor_total">${formatCurrency(item.valor_total || 0)}</td>
+            <td data-field="valor_total_iva">${formatCurrency(item.valor_total_iva || 0)}</td>
             <td>${actionsHtml}</td>
         `;
 
@@ -350,19 +350,15 @@ function sellItem(item) {
 
     if (exhibidor > 0) {
         showToast(`1 unidad de ${item.descripcion} vendida desde exhibidor.`, 'success');
-        const newExhibidor = exhibidor - 1;
         return {
-            exhibidor: newExhibidor,
-            vendidos: vendidos + 1,
-            valor_total: (newExhibidor + bodega) * item.precio_unitario
+            exhibidor: exhibidor - 1,
+            vendidos: vendidos + 1
         };
     } else if (bodega > 0) {
         showToast(`1 unidad de ${item.descripcion} vendida desde bodega.`, 'success');
-        const newBodega = bodega - 1;
         return {
-            bodega: newBodega,
-            vendidos: vendidos + 1,
-            valor_total: (exhibidor + newBodega) * item.precio_unitario
+            bodega: bodega - 1,
+            vendidos: vendidos + 1
         };
     } else {
         showToast(`No hay unidades de ${item.descripcion} para vender.`, 'error');
@@ -376,14 +372,9 @@ function moveUnits(item, from, to, quantity) {
 
     if (fromValue >= quantity) {
         showToast(`${quantity} unidad(es) de ${item.descripcion} movida(s) de ${from} a ${to}.`, 'success');
-        const newFromValue = fromValue - quantity;
-        const newToValue = toValue + quantity;
-        const newExhibidor = to === 'exhibidor' ? newToValue : (from === 'exhibidor' ? newFromValue : parseInt(item.exhibidor, 10) || 0);
-        const newBodega = to === 'bodega' ? newToValue : (from === 'bodega' ? newFromValue : parseInt(item.bodega, 10) || 0);
         return {
-            [from]: newFromValue,
-            [to]: newToValue,
-            valor_total: (newExhibidor + newBodega) * item.precio_unitario
+            [from]: fromValue - quantity,
+            [to]: toValue + quantity
         };
     } else {
         showToast(`No hay suficientes unidades en ${from} para mover.`, 'error');
@@ -394,11 +385,8 @@ function moveUnits(item, from, to, quantity) {
 function addUnit(item, location, quantity) {
     showToast(`${quantity} unidad(es) añadida(s) a ${location} para ${item.descripcion}.`, 'success');
     const newLocationValue = (parseInt(item[location], 10) || 0) + quantity;
-    const newExhibidor = location === 'exhibidor' ? newLocationValue : (parseInt(item.exhibidor, 10) || 0);
-    const newBodega = location === 'bodega' ? newLocationValue : (parseInt(item.bodega, 10) || 0);
     return {
-        [location]: newLocationValue,
-        valor_total: (newExhibidor + newBodega) * item.precio_unitario
+        [location]: newLocationValue
     };
 }
 
@@ -406,12 +394,8 @@ function removeUnit(item, location, quantity) {
     const locationValue = parseInt(item[location], 10) || 0;
     if (locationValue >= quantity) {
         showToast(`${quantity} unidad(es) quitada(s) de ${location} para ${item.descripcion}.`, 'success');
-        const newLocationValue = locationValue - quantity;
-        const newExhibidor = location === 'exhibidor' ? newLocationValue : (parseInt(item.exhibidor, 10) || 0);
-        const newBodega = location === 'bodega' ? newLocationValue : (parseInt(item.bodega, 10) || 0);
         return {
-            [location]: newLocationValue,
-            valor_total: (newExhibidor + newBodega) * item.precio_unitario
+            [location]: locationValue - quantity
         };
     } else {
         showToast(`No hay suficientes unidades en ${location} para quitar.`, 'error');
@@ -421,16 +405,12 @@ function removeUnit(item, location, quantity) {
 
 function undoSell(item) {
     const vendidos = parseInt(item.vendidos, 10) || 0;
-    const bodega = parseInt(item.bodega, 10) || 0;
-    const exhibidor = parseInt(item.exhibidor, 10) || 0;
 
     if (vendidos > 0) {
         showToast(`1 unidad de ${item.descripcion} devuelta de vendidos a bodega.`, 'success');
-        const newBodega = bodega + 1;
         return {
             vendidos: vendidos - 1,
-            bodega: newBodega,
-            valor_total: (exhibidor + newBodega) * item.precio_unitario
+            bodega: (parseInt(item.bodega, 10) || 0) + 1
         };
     } else {
         showToast(`No hay unidades vendidas de ${item.descripcion} para anular.`, 'error');
@@ -439,10 +419,10 @@ function undoSell(item) {
 }
 
 function exportCSV() {
-    const headers = ["referencia", "descripcion", "precio_unitario", "exhibidor", "bodega", "vendidos", "precio_en_ventas", "valor_total"];
+    const headers = ["referencia", "descripcion", "precio_unitario", "exhibidor", "bodega", "vendidos", "precio_en_ventas", "valor_total_iva"];
     const csvRows = [headers.join(',')];
     inventory.forEach(item => {
-        item.precio_en_ventas = item.vendidos * item.precio_unitario; // Ensure this is calculated
+        item.precio_en_ventas = (parseInt(item.vendidos, 10) || 0) * (parseFloat(item.precio_unitario) || 0); // Ensure this is calculated
         
         const rowData = {
             ...item,
@@ -483,14 +463,16 @@ function hideAddItemModal() {
 async function handleAddNewItem(event) {
     event.preventDefault();
     const form = document.getElementById('addNewItemForm');
+    const precio_unitario = parseFloat(form.precio_unitario.value);
+
     const newItem = {
         referencia: form.referencia.value,
         descripcion: form.descripcion.value,
-        precio_unitario: parseFloat(form.precio_unitario.value),
-        exhibidor: parseInt(form.exhibidor.value),
-        bodega: parseInt(form.bodega.value),
+        precio_unitario: precio_unitario,
+        exhibidor: parseInt(form.exhibidor.value, 10) || 0,
+        bodega: parseInt(form.bodega.value, 10) || 0,
         vendidos: 0,
-        valor_total: 0 // Will be calculated below
+        valor_total_iva: (precio_unitario * 1.6) + 15000
     };
 
     if (inventory.some(item => item.referencia === newItem.referencia)) {
@@ -501,9 +483,6 @@ async function handleAddNewItem(event) {
         showToast('Por favor, ingrese valores numéricos válidos y positivos.', 'error');
         return;
     }
-
-    // Calculate valor_total
-    newItem.valor_total = (newItem.exhibidor + newItem.bodega) * newItem.precio_unitario;
 
     // Add to local array
     inventory.push(newItem);
@@ -541,8 +520,6 @@ async function saveEditedItem(row, item) {
     let updatedFields = {};
     let hasError = false;
 
-    const newValues = { ...item }; // Copy original item values
-
     inputs.forEach(input => {
         const field = input.dataset.field;
         let value = input.value;
@@ -555,18 +532,14 @@ async function saveEditedItem(row, item) {
         }
         if (item[field] !== value) {
             updatedFields[field] = value;
-            newValues[field] = value; // Store new value for calculation
         }
     });
 
     if (hasError) return;
 
-    // Recalculate valor_total if relevant fields have changed
-    if (updatedFields.hasOwnProperty('exhibidor') || updatedFields.hasOwnProperty('bodega') || updatedFields.hasOwnProperty('precio_unitario')) {
-        const newValorTotal = (newValues.exhibidor + newValues.bodega) * newValues.precio_unitario;
-        if (item.valor_total !== newValorTotal) {
-            updatedFields.valor_total = newValorTotal;
-        }
+    // Recalculate valor_total_iva if precio_unitario has changed
+    if (updatedFields.hasOwnProperty('precio_unitario')) {
+        updatedFields.valor_total_iva = (updatedFields.precio_unitario * 1.6) + 15000;
     }
 
     if (Object.keys(updatedFields).length > 0) {

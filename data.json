@@ -6,25 +6,25 @@
     "exhibidor": 3,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 1224000
+    "valor_total_iva": 667800
   },
   {
     "referencia": "10588",
     "descripcion": "ARBOL PINO SIBERIA 180CM 715",
-    "precio_unitario": 320000,
+    "precio_unitario": 175000,
     "exhibidor": 2,
     "bodega": 1,
     "vendidos": 0,
-    "valor_total": 960000
+    "valor_total_iva": 320000
   },
   {
     "referencia": "10589",
     "descripcion": "ARBOL PINO SIBERIA 160CM 480 RMS",
-    "precio_unitario": 480000,
+    "precio_unitario": 286000,
     "exhibidor": 1,
     "bodega": 2,
     "vendidos": 0,
-    "valor_total": 1440000
+    "valor_total_iva": 480000
   },
   {
     "referencia": "10590",
@@ -33,7 +33,7 @@
     "exhibidor": 4,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 2268000
+    "valor_total_iva": 922200
   },
   {
     "referencia": "10592",
@@ -42,7 +42,7 @@
     "exhibidor": 3,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 1134000
+    "valor_total_iva": 619800
   },
   {
     "referencia": "11090",
@@ -51,7 +51,7 @@
     "exhibidor": 3,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 1041000
+    "valor_total_iva": 570200
   },
   {
     "referencia": "11905",
@@ -60,7 +60,7 @@
     "exhibidor": 0,
     "bodega": 4,
     "vendidos": 0,
-    "valor_total": 948000
+    "valor_total_iva": 394200
   },
   {
     "referencia": "11908",
@@ -69,7 +69,7 @@
     "exhibidor": 2,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 780000
+    "valor_total_iva": 639000
   },
   {
     "referencia": "11909",
@@ -78,7 +78,7 @@
     "exhibidor": 1,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 920000
+    "valor_total_iva": 1487000
   },
   {
     "referencia": "11914",
@@ -87,7 +87,7 @@
     "exhibidor": 2,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 780000
+    "valor_total_iva": 639000
   },
   {
     "referencia": "11921",
@@ -96,7 +96,7 @@
     "exhibidor": 1,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 790000
+    "valor_total_iva": 1279000
   },
   {
     "referencia": "11930",
@@ -105,7 +105,7 @@
     "exhibidor": 1,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 420000
+    "valor_total_iva": 687000
   },
   {
     "referencia": "11931",
@@ -114,7 +114,7 @@
     "exhibidor": 1,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 495000
+    "valor_total_iva": 807000
   },
   {
     "referencia": "11933",
@@ -123,7 +123,7 @@
     "exhibidor": 1,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 520000
+    "valor_total_iva": 847000
   },
   {
     "referencia": "13320",
@@ -132,7 +132,7 @@
     "exhibidor": 1,
     "bodega": 0,
     "vendidos": 0,
-    "valor_total": 528000
+    "valor_total_iva": 859800
   },
   {
     "referencia": "14748",
@@ -141,7 +141,7 @@
     "exhibidor": 1,
     "bodega": 2,
     "vendidos": 0,
-    "valor_total": 1254000
+    "valor_total_iva": 683800
   },
   {
     "referencia": "14755",
@@ -150,6 +150,6 @@
     "exhibidor": 1,
     "bodega": 2,
     "vendidos": 0,
-    "valor_total": 1254000
+    "valor_total_iva": 683800
   }
 ]
