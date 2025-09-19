@@ -191,8 +191,7 @@ function renderInventory(dataToRender) {
     const itemsToRender = dataToRender || [];
 
     itemsToRender.forEach(item => {
-        item.precio_en_ventas = item.vendidos * item.precio_unitario;
-        const valorTotal = (item.exhibidor + item.bodega) * item.precio_unitario;
+        item.precio_en_ventas = (parseInt(item.vendidos, 10) || 0) * (parseFloat(item.valor_total_iva) || 0);
 
         const row = inventoryTableBody.insertRow();
         row.dataset.reference = item.referencia;
@@ -422,7 +421,8 @@ function exportCSV() {
     const headers = ["referencia", "descripcion", "precio_unitario", "exhibidor", "bodega", "vendidos", "precio_en_ventas", "valor_total_iva"];
     const csvRows = [headers.join(',')];
     inventory.forEach(item => {
-        item.precio_en_ventas = (parseInt(item.vendidos, 10) || 0) * (parseFloat(item.precio_unitario) || 0); // Ensure this is calculated
+        // Calculate precio_en_ventas dynamically
+        item.precio_en_ventas = (parseInt(item.vendidos, 10) || 0) * (parseFloat(item.valor_total_iva) || 0); // Ensure this is calculated
         
         const rowData = {
             ...item,
