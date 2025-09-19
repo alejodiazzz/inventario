@@ -126,7 +126,8 @@ async function loadInventory() {
                     exhibidor: parseInt(data.exhibidor, 10) || 0,
                     bodega: parseInt(data.bodega, 10) || 0,
                     vendidos: parseInt(data.vendidos, 10) || 0,
-                    precio_unitario: parseFloat(data.precio_unitario) || 0
+                    precio_unitario: parseFloat(data.precio_unitario) || 0,
+                    valor_total_iva: parseFloat(data.valor_total_iva) || 0
                 };
             });
             showToast('Inventario cargado exitosamente.', 'success');
